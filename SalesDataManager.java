@@ -22,7 +22,7 @@ public class SalesDataManager {
     /**
     * List of commission percentile in the order of sale unit of 25000
     *   
-    *   0 - 25000       8%
+    *   0 - 25000       5%
     *   25001 - 50000   6%
     *   50001 - 75000   8%
     *   75001 - 100000  10%
