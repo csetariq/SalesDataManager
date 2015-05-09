@@ -1,19 +1,24 @@
-import java.util.*;
-import java.util.regex.*;
+import java.util.Arrays;
+import java.util.Scanner;
+import java.util.regex.Pattern;
 
 public class SalesDataManager {
     
-    private static final int        N       = 4;
-    private static final char       NEWLINE = '\n';
-    private static final int        SLAB    = 25000;
-    private static final double[]   PERCENT = { 5.0,
-                                                6.0,
-                                                8.0,
-                                                10.0};
+    private static final int        N           = 4;
+    private static final char       NEWLINE     = '\n';
+    private static final int        SLAB        = 25000;
+    private static final int        SALES_UNIT  = 1000;
+    private static final int        SALES_MIN   = 10;
+    private static final int        SALES_MAX   = 100;
+    private static final double[]   PERCENT     = { 5.0,
+                                                    6.0,
+                                                    8.0,
+                                                    10.0};
+    
+    private static Scanner in = new Scanner(System.in);
 
     private SalesPerson[] masterList;
-    private SalesPerson[] nameSorted;
-    private SalesPerson[] salesSorted;
+    private SalesPerson[] sortedList;
 
     public SalesDataManager() {
         masterList = new SalesPerson[N];
@@ -21,6 +26,7 @@ public class SalesDataManager {
 
     public void displayMenu() {
         System.out.println(
+            NEWLINE +
             "1. Input and Validate data"    + NEWLINE +
             "2. Display"                    + NEWLINE +
             "3. Sort by name"               + NEWLINE +
@@ -28,12 +34,11 @@ public class SalesDataManager {
             "5. Search by name"             + NEWLINE +
             "6. Search by sales"            + NEWLINE +
             "7. Display statistics"         + NEWLINE +
-            "8. Exit"
+            "8. Exit"                       + NEWLINE
         );
     }
 
     public void inputData() {
-        Scanner in = new Scanner(System.in);
         
         for (int i = 0; i < N; i++) {
             String  name        = null;
@@ -47,19 +52,22 @@ public class SalesDataManager {
                 if (isValidName(name))
                     break;
                 else
-                    System.out.println("Invalid name");
+                    System.out.println("\n\tInvalid name\n");
             }
             
             while (true) {
                 System.out.printf("Enter sales %d: ", i + 1);
-                sales = Integer.parseInt(in.nextLine().trim());
+                String temp = in.nextLine().trim();
+
+                if (!temp.isEmpty()) {
+                    sales = Integer.parseInt(temp);
                 
-                if (isValidSales(sales)) { 
-                    sales *= 1000;
-                    break;
-                } else {
-                    System.out.println("Invalid sales. Must be within [10 - 100]");
+                    if (isValidSales(sales)) { 
+                        break;
+                    }
                 }
+
+                System.out.println("\n\tInvalid sales. Must be within [10 - 100]\n");
             }
 
             commission = calculateCommission(sales);
@@ -67,86 +75,112 @@ public class SalesDataManager {
             SalesPerson currentPerson = new SalesPerson(name, sales, commission);
             masterList[i] = currentPerson;
         }
+        sortedList = Arrays.copyOf(masterList, masterList.length);
     }
 
     public void sortByName() {
-        if (masterList[0] != null) {
-            nameSorted = Arrays.copyOf(masterList, masterList.length);
+        if (!isListEmpty(masterList)) {
             SalesPerson temp = null;
             int i = 0;
-    		for(int j = 1; j < nameSorted.length; j++) {
-    			temp = nameSorted[j];
-    			for(i = j; 
-                    i > 0 && temp.getName().compareTo(nameSorted[i-1].getName()) < 0;
+            for(int j = 1; j < sortedList.length; j++) {
+                temp = sortedList[j];
+                for(i = j; 
+                    i > 0 && temp.getName().compareToIgnoreCase(sortedList[i-1].getName()) < 0;
                     i--) {
-    				nameSorted[i] = nameSorted[i-1];
+                    sortedList[i] = sortedList[i-1];
                 }
-    			nameSorted[i] = temp;
-    		}
-            display(nameSorted);
+                sortedList[i] = temp;
+            }
         }
     }
 
     public void sortBySales() {
-        if (masterList[0] != null) {
-            salesSorted = Arrays.copyOf(masterList, masterList.length);
+        if (!isListEmpty(masterList)) {
             SalesPerson temp = null;
             int i = 0;
-    		for(int j = 1; j < salesSorted.length; j++) {
-    			temp = salesSorted[j];
-    			for(i = j; i > 0 && temp.getSales() < salesSorted[i-1].getSales(); i--)
-    				salesSorted[i] = salesSorted[i-1];
-    			salesSorted[i] = temp;
-    		}
-            display(salesSorted);
+            for(int j = 1; j < sortedList.length; j++) {
+                temp = sortedList[j];
+                for(i = j; i > 0 && temp.getSales() < sortedList[i-1].getSales(); i--)
+                    sortedList[i] = sortedList[i-1];
+                sortedList[i] = temp;
+            }
         }
     }
 
     public void searchByName(String name) {
-        for (int i = 0; i < masterList.length; i++) {
-            SalesPerson person = masterList[i];
-
-            if (name.equalsIgnoreCase(person.getName())) {
-                System.out.printf("%s - Sales amount: $%d; Commission: $%.1f %n",
-                                    person.getName(),
-                                    person.getSales(),
-                                    person.getCommission());
-                return;
+        if (!isListEmpty(masterList)) {
+            for (int i = 0; i < masterList.length; i++) {
+                SalesPerson person = masterList[i];
+    
+                if (name.equalsIgnoreCase(person.getName())) {
+                    System.out.println("\n\t--------------------------------------------------------------");
+                    System.out.printf("\t%s - Sales amount: $%d; Commission: $%.1f %n",
+                                        person.getName(),
+                                        person.getSales(),
+                                        person.getCommission());
+                    System.out.println("\t--------------------------------------------------------------\n");
+                    return;
+                }
             }
+            System.out.println("\n\tNo match found\n");
+        } else {
+            System.out.println("\n\tNothing to search\n");
         }
-        System.out.println("No match found");
     }
 
     public void searchBySales(int sales) {
-        sales = sales * 1000;
-        System.out.printf("The following sales person has less than $%d %n%n", sales);
-        for (int i = 0; i < salesSorted.length; i++) {
-            SalesPerson person = salesSorted[i];
-
-            if (person.getSales() < sales) {
-                System.out.printf("%20s $%-6d %n",
-                                    person.getName(),
-                                    person.getSales());
-            } else {
-                return;
+        if (!isListEmpty(masterList)) {
+            boolean foundRecords = false;
+            sortBySales();
+            sales *= SALES_UNIT;
+            System.out.printf("\n\tThe following sales person has less than $%d %n%n", sales);
+            for (int i = 0; i < sortedList.length; i++) {
+                SalesPerson person = sortedList[i];
+    
+                if (person.getSales() < sales) {
+                    foundRecords = true;
+                    System.out.printf("\t%-20s $%-6d %n",
+                                        person.getName(),
+                                        person.getSales());
+                } else {
+                    System.out.println();
+                    return;
+                }
             }
+            if (!foundRecords)
+                System.out.println("\n\tNo records found\n");
+        } else {
+            System.out.println("\n\tNothing to search\n");
         }
-        System.out.println("No records found");
     }
 
     public void displayStatistics() {
-        SalesPerson lowest = salesSorted[0];
-        SalesPerson highest = salesSorted[salesSorted.length - 1];
-
-        int median = (lowest.getSales() + highest.getSales()) / 2;
-
-        System.out.printf("Sales person with lowest sales amount is %s, $%d%n", 
-                            lowest.getName(),
-                            lowest.getSales());
-        System.out.printf("Sales person with highest sales amount is %s, $%d%n", 
-                            highest.getName(),
-                            highest.getSales());
-        System.out.printf("The median sales amount is $%d%n", median);
+        if (!isListEmpty(masterList)) {
+            sortBySales();
+            SalesPerson lowest = sortedList[0];
+            SalesPerson highest = sortedList[sortedList.length - 1];
+    
+            int median = (lowest.getSales() + highest.getSales()) / 2;
+            
+            System.out.printf("\n\t=======================================================%n");
+            System.out.printf("\t%-25s %-20s  %-11s%n", "Statistics", "Sales person", "Amount");
+            System.out.printf("\t-------------------------------------------------------%n");
+            System.out.printf("\t%-25s %-20s  $%-10d%n",
+                                "Lowest grosser",
+                                lowest.getName(),
+                                lowest.getSales());
+            System.out.printf("\t%-25s %-20s  $%-10d%n",
+                                "Highest grosser",
+                                highest.getName(),
+                                highest.getSales());
+            System.out.printf("\t%-25s %-20s  $%-10d%n",
+                                "Median",
+                                "-",
+                                median);
+            System.out.printf("\t-------------------------------------------------------%n");
+        } else {
+            System.out.println("\n\tNothing to display\n");
+        }
     }
 
     public boolean isValidName(String name) {
@@ -163,10 +197,11 @@ public class SalesDataManager {
     }
 
     public boolean isValidSales(int sales) {
-        return sales >= 10 && sales <= 100;
+        return sales >= SALES_MIN && sales <= SALES_MAX;
     }
 
     public double calculateCommission(int salesAmount) {
+        salesAmount *= SALES_UNIT;
         int level = (salesAmount - 1) / SLAB;
 
         return salesAmount * (PERCENT[level] / 100);
@@ -177,20 +212,41 @@ public class SalesDataManager {
     }
 
     private void display(SalesPerson[] list) {
-       for (int i = 0; i < list.length; ++i) {
-            SalesPerson person = list[i];
+        if (!isListEmpty(list)) {
+            System.out.println("\n\tSales and commission");
+            System.out.println("\t===========================================");
+            System.out.printf("\t%-20s %-11s %-11s %n", "Sales person", "Amount", "Commission");
+            System.out.println("\t-------------------------------------------");
+            for (int i = 0; i < list.length; ++i) {
+                SalesPerson person = list[i];
 
-            System.out.printf("%-20s $%-10d $%-.1f %n",
-                                person.getName(),
-                                person.getSales(),
-                                person.getCommission());
-       }
+                System.out.printf("\t%-20s $%-10d $%-10.1f %n",
+                                    person.getName(),
+                                    person.getSales(),
+                                    person.getCommission());
+           }
+           System.out.println("\t-------------------------------------------");
+           System.out.printf("\tTotal entries: %d %n", list.length);
+           System.out.println("\t-------------------------------------------\n");
+        } else {
+            System.out.println("\n\tNothing to display\n");
+        }
     }
 
+    private static boolean isListEmpty(SalesPerson[] list) {
+        if (list != null)
+            if (list[0] != null)
+                return false;
+        return true;
+    }
+   
     public static void main(String[] args) {
-        Scanner in = new Scanner(System.in);
         SalesDataManager manager = new SalesDataManager();
         int ans = -1;
+        
+        System.out.println("\n\tSales and commission data manager");
+        System.out.println("\t---------------------------------");
+        
         do {
             manager.displayMenu();
 
@@ -212,20 +268,22 @@ public class SalesDataManager {
                 break;
             case 3:
                 manager.sortByName();
+                manager.display(manager.sortedList);
                 break;
             case 4:
                 manager.sortBySales();
+                manager.display(manager.sortedList);
                 break;
             case 5:
                 String name = null;
                 while (true) {
                     System.out.print("Enter a name to search: ");
                     name = in.nextLine().trim();
-
+                    
                     if (!name.isEmpty())
                         break;
                     else
-                        System.out.println("Name cannot be empty!");
+                        System.out.println("\n\tName cannot be empty\n");
                 }
                 manager.searchByName(name);
                 break;
@@ -239,7 +297,7 @@ public class SalesDataManager {
                         sales = Integer.parseInt(salesString);
                         break;
                     } else {
-                        System.out.println("Sales cannot be empty!");
+                        System.out.println("\n\tSales cannot be empty\n");
                     }
                 }
                 manager.searchBySales(sales);
@@ -248,10 +306,14 @@ public class SalesDataManager {
                 manager.displayStatistics();
                 break;
             case 8:
+                System.out.println("\n\tThanks for using !!!\n");
+                in.close();
                 System.exit(0);
             default:
-                System.out.printf("Invalid option!");
+                System.out.println("\n\tInvalid option\n");
             }
         } while (true);
+
+
     }
 }
