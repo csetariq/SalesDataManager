@@ -6,10 +6,27 @@ public class SalesDataManager {
     
     private static final int        N           = 4;
     private static final char       NEWLINE     = '\n';
+    
+    /**
+    * The commission level varies for every 25000
+    */
     private static final int        SLAB        = 25000;
+    
+    /**
+    * Sales are in G's
+    */
     private static final int        SALES_UNIT  = 1000;
     private static final int        SALES_MIN   = 10;
     private static final int        SALES_MAX   = 100;
+    
+    /**
+    * List of commission percentile in the order of sale unit of 25000
+    *   
+    *   0 - 25000       8%
+    *   25001 - 50000   6%
+    *   50001 - 75000   8%
+    *   75001 - 100000  10%
+    */
     private static final double[]   PERCENT     = { 5.0,
                                                     6.0,
                                                     8.0,
@@ -17,7 +34,14 @@ public class SalesDataManager {
     
     private static Scanner in = new Scanner(System.in);
 
+    /**
+    * Master list of sales person in the order of input
+    */
     private SalesPerson[] masterList;
+    
+    /**
+    * Copy of Master list to be used different sorting
+    */
     private SalesPerson[] sortedList;
 
     public SalesDataManager() {
@@ -80,35 +104,58 @@ public class SalesDataManager {
 
     public void sortByName() {
         if (!isListEmpty(masterList)) {
-            SalesPerson temp = null;
+            SalesPerson inHand = null;
+            // Insertion sort begins
             int i = 0;
             for(int j = 1; j < sortedList.length; j++) {
-                temp = sortedList[j];
+                inHand = sortedList[j];
+                /**
+                * Compare the current person with previous person based on name (String)
+                * 
+                * Using 
+                *       name.compareToIgnoreCase(anotherName)
+                * Returns
+                *       -1, if name lexicographically appears before anotherName
+                *       +1, if name lexicographically appears after anotherName
+                *       0,  if name and anotherName are equal
+                */
                 for(i = j; 
-                    i > 0 && temp.getName().compareToIgnoreCase(sortedList[i-1].getName()) < 0;
+                    i > 0 && inHand.getName().compareToIgnoreCase(sortedList[i-1].getName()) < 0;
                     i--) {
                     sortedList[i] = sortedList[i-1];
                 }
-                sortedList[i] = temp;
+                sortedList[i] = inHand;
             }
+            // Insertion sort ends
         }
     }
 
     public void sortBySales() {
         if (!isListEmpty(masterList)) {
-            SalesPerson temp = null;
+            SalesPerson inHand = null;
+            // Insertion sort begins
             int i = 0;
             for(int j = 1; j < sortedList.length; j++) {
-                temp = sortedList[j];
-                for(i = j; i > 0 && temp.getSales() < sortedList[i-1].getSales(); i--)
+                inHand = sortedList[j];
+                /**
+                * Compare the current person with previous person based on sales
+                */
+                for(i = j; i > 0 && inHand.getSales() < sortedList[i-1].getSales(); i--)
                     sortedList[i] = sortedList[i-1];
-                sortedList[i] = temp;
+                sortedList[i] = inHand;
             }
+            // Insertion sort begins
         }
     }
 
     public void searchByName(String name) {
         if (!isListEmpty(masterList)) {
+            /**
+            * Linear search
+            *
+            * Iterate through the list, an element is found, if there is a match before 
+            * reaching the end of the array
+            */
             for (int i = 0; i < masterList.length; i++) {
                 SalesPerson person = masterList[i];
     
@@ -122,6 +169,8 @@ public class SalesDataManager {
                     return;
                 }
             }
+            // If a match was found, the control would have returned to caller
+            // If the control reaches here, the no match found
             System.out.println("\n\tNo match found\n");
         } else {
             System.out.println("\n\tNothing to search\n");
@@ -132,6 +181,12 @@ public class SalesDataManager {
         if (!isListEmpty(masterList)) {
             boolean foundRecords = false;
             sortBySales();
+            /**
+            *   sortedList is now sorted based on sales
+            *   
+            *   Iterate through the sorted list and print the details until,
+            *   we find a person who  has sales greater than the given sales
+            */
             sales *= SALES_UNIT;
             System.out.printf("\n\tThe following sales person has less than $%d %n%n", sales);
             for (int i = 0; i < sortedList.length; i++) {
@@ -157,6 +212,12 @@ public class SalesDataManager {
     public void displayStatistics() {
         if (!isListEmpty(masterList)) {
             sortBySales();
+            /**
+            *   sortedList is now sorted based on sales
+            *   
+            *   First element will have have the lowest sales
+            *   Last element will have the highest sales
+            */
             SalesPerson lowest = sortedList[0];
             SalesPerson highest = sortedList[sortedList.length - 1];
     
@@ -219,6 +280,14 @@ public class SalesDataManager {
 
         return isAlpha && name.indexOf(' ') == name.lastIndexOf(' ');
         */
+        
+        /**
+        *   Name should meet the following requirements
+        *   
+        *       i   Should contain First name and Last name
+        *       ii  First name and Last name should be separated by a space 
+        *       iii First name and Last name can only have alphabetic characters
+        */
         return Pattern.matches("[a-zA-Z]+[ ][a-zA-Z]+", name);
     }
 
@@ -228,6 +297,19 @@ public class SalesDataManager {
 
     public double calculateCommission(int salesAmount) {
         salesAmount *= SALES_UNIT;
+        
+        /**
+        *   Find the level of salesAmount on a SLAB of 25000
+        *   
+        *       0 - 25000       0
+        *       25001 - 50000   1
+        *       50001 - 75000   2
+        *       75001 - 100000  3
+        *   
+        *   this can be achieved by simply dividing the salesAmount by SLAB
+        *
+        *   With the calculated level, the percentile can be fetched from PERCENT array
+        */
         int level = (salesAmount - 1) / SLAB;
 
         return salesAmount * (PERCENT[level] / 100);
@@ -316,6 +398,9 @@ public class SalesDataManager {
     }
 }
 
+/**
+*   Class that models a Sales person
+*/
 class SalesPerson {
 
     private static final int SALES_UNIT = 1000;
