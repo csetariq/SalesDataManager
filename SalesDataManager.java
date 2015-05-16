@@ -37,15 +37,30 @@ public class SalesDataManager {
     /**
     * Master list of sales person in the order of input
     */
-    private SalesPerson[] masterList;
+    private String[]    masterNames;
+    private int[]       masterSales;
+    private double[]    masterCommissions;
     
     /**
-    * Copy of Master list to be used different sorting
+    * Copy of Master list to be used while sorting
+    *
+    * These 3 arrays are considered as a single entity
+    *
+    * While sorting one array, all other arrays must also be sorted in parallel
+    * based on the array being sorted
     */
-    private SalesPerson[] sortedList;
+    private String[]    copyNames;
+    private int[]       copySales;
+    private double[]    copyCommissions;
 
     public SalesDataManager() {
-        masterList = new SalesPerson[N];
+        masterNames         = new String[N];
+        masterSales         = new int[N];
+        masterCommissions   = new double[N];
+        
+        copyNames           = new String[N];
+        copySales           = new int[N];
+        copyCommissions     = new double[N];
     }
 
     public void displayMenu() {
@@ -96,19 +111,29 @@ public class SalesDataManager {
 
             commission = calculateCommission(sales);
 
-            SalesPerson currentPerson = new SalesPerson(name, sales, commission);
-            masterList[i] = currentPerson;
+            masterNames[i]          = name;
+            masterSales[i]          = sales * SALES_UNIT;
+            masterCommissions[i]    = commission;
         }
-        sortedList = Arrays.copyOf(masterList, masterList.length);
+        // Copy the master array contents to copies
+        System.arraycopy(masterNames, 0, copyNames, 0, masterNames.length);
+        System.arraycopy(masterSales, 0, copySales, 0, masterSales.length);
+        System.arraycopy(masterCommissions, 0, copyCommissions, 0, masterCommissions.length);
     }
 
     public void sortByName() {
-        if (!isListEmpty(masterList)) {
-            SalesPerson inHand = null;
+        if (!isListEmpty(masterNames)) {
             // Insertion sort begins
+            String  inHandName          = null;
+            int     inHandSale          = 0;
+            double  inHandCommission    = 0.0;
+            
             int i = 0;
-            for(int j = 1; j < sortedList.length; j++) {
-                inHand = sortedList[j];
+            for(int j = 1; j < copyNames.length; j++) {
+                inHandName          = copyNames[j];
+                inHandSale          = copySales[j];
+                inHandCommission    = copyCommissions[j];
+                
                 /**
                 * Compare the current person with previous person based on name (String)
                 * 
@@ -120,51 +145,64 @@ public class SalesDataManager {
                 *       0,  if name and anotherName are equal
                 */
                 for(i = j; 
-                    i > 0 && inHand.getName().compareToIgnoreCase(sortedList[i-1].getName()) < 0;
+                    i > 0 && inHandName.compareToIgnoreCase(copyNames[i-1]) < 0;
                     i--) {
-                    sortedList[i] = sortedList[i-1];
+                    copyNames[i]        = copyNames[i-1];
+                    copySales[i]        = copySales[i-1];
+                    copyCommissions[i]  = copyCommissions[i-1];
                 }
-                sortedList[i] = inHand;
+                copyNames[i]        = inHandName;
+                copySales[i]        = inHandSale;
+                copyCommissions[i]  = inHandCommission;
             }
             // Insertion sort ends
         }
     }
 
     public void sortBySales() {
-        if (!isListEmpty(masterList)) {
-            SalesPerson inHand = null;
+        if (!isListEmpty(masterNames)) {
             // Insertion sort begins
+            String  inHandName          = null;
+            int     inHandSale          = 0;
+            double  inHandCommission    = 0.0;
+            
             int i = 0;
-            for(int j = 1; j < sortedList.length; j++) {
-                inHand = sortedList[j];
+            for(int j = 1; j < copySales.length; j++) {
+                inHandName          = copyNames[j];
+                inHandSale          = copySales[j];
+                inHandCommission    = copyCommissions[j];
                 /**
                 * Compare the current person with previous person based on sales
                 */
-                for(i = j; i > 0 && inHand.getSales() < sortedList[i-1].getSales(); i--)
-                    sortedList[i] = sortedList[i-1];
-                sortedList[i] = inHand;
+                for(i = j; i > 0 && inHandSale < copySales[i-1]; i--) {
+                    copyNames[i]        = copyNames[i-1];
+                    copySales[i]        = copySales[i-1];
+                    copyCommissions[i]  = copyCommissions[i-1];
+                }
+                copyNames[i]        = inHandName;
+                copySales[i]        = inHandSale;
+                copyCommissions[i]  = inHandCommission;
             }
             // Insertion sort begins
         }
     }
 
     public void searchByName(String name) {
-        if (!isListEmpty(masterList)) {
+        if (!isListEmpty(masterNames)) {
             /**
-            * Linear search
+            * Linear Search
             *
             * Iterate through the list, an element is found, if there is a match before 
             * reaching the end of the array
             */
-            for (int i = 0; i < masterList.length; i++) {
-                SalesPerson person = masterList[i];
+            for (int i = 0; i < masterNames.length; i++) {
     
-                if (name.equalsIgnoreCase(person.getName())) {
+                if (name.equalsIgnoreCase(masterNames[i])) {
                     System.out.println("\n\t--------------------------------------------------------------");
                     System.out.printf("\t%s - Sales amount: $%d; Commission: $%.1f %n",
-                                        person.getName(),
-                                        person.getSales(),
-                                        person.getCommission());
+                                        masterNames[i],
+                                        masterSales[i],
+                                        masterCommissions[i]);
                     System.out.println("\t--------------------------------------------------------------\n");
                     return;
                 }
@@ -178,25 +216,26 @@ public class SalesDataManager {
     }
 
     public void searchBySales(int sales) {
-        if (!isListEmpty(masterList)) {
+        if (!isListEmpty(masterNames)) {
             boolean foundRecords = false;
             sortBySales();
             /**
-            *   sortedList is now sorted based on sales
+            *   copySales is now sorted
             *   
+            *   Linear Search
+            *   -------------
             *   Iterate through the sorted list and print the details until,
-            *   we find a person who  has sales greater than the given sales
+            *   we find a entry which has sales greater than the given sales
             */
             sales *= SALES_UNIT;
             System.out.printf("\n\tThe following sales person has less than $%d %n%n", sales);
-            for (int i = 0; i < sortedList.length; i++) {
-                SalesPerson person = sortedList[i];
+            for (int i = 0; i < copySales.length; i++) {
     
-                if (person.getSales() < sales) {
+                if (copySales[i] < sales) {
                     foundRecords = true;
                     System.out.printf("\t%-20s $%-6d %n",
-                                        person.getName(),
-                                        person.getSales());
+                                        copyNames[i],
+                                        copySales[i]);
                 } else {
                     System.out.println();
                     return;
@@ -210,30 +249,28 @@ public class SalesDataManager {
     }
 
     public void displayStatistics() {
-        if (!isListEmpty(masterList)) {
+        if (!isListEmpty(masterNames)) {
             sortBySales();
             /**
-            *   sortedList is now sorted based on sales
+            *   copySales is now sorted based on sales
             *   
             *   First element will have have the lowest sales
             *   Last element will have the highest sales
             */
-            SalesPerson lowest = sortedList[0];
-            SalesPerson highest = sortedList[sortedList.length - 1];
     
-            int median = (lowest.getSales() + highest.getSales()) / 2;
+            int median = (copySales[0] + copySales[copySales.length - 1]) / 2;
             
             System.out.printf("\n\t=======================================================%n");
             System.out.printf("\t%-25s %-20s  %-11s%n", "Statistics", "Sales person", "Amount");
             System.out.printf("\t-------------------------------------------------------%n");
             System.out.printf("\t%-25s %-20s  $%-10d%n",
                                 "Lowest grosser",
-                                lowest.getName(),
-                                lowest.getSales());
+                                copyNames[0],
+                                copySales[0]);
             System.out.printf("\t%-25s %-20s  $%-10d%n",
                                 "Highest grosser",
-                                highest.getName(),
-                                highest.getSales());
+                                copyNames[copyNames.length - 1],
+                                copySales[copySales.length - 1]);
             System.out.printf("\t%-25s %-20s  $%-10d%n",
                                 "Median",
                                 "-",
@@ -244,26 +281,29 @@ public class SalesDataManager {
         }
     }
 
-    public void display() {
-        display(masterList);
+    public void displayMasterList() {
+        display(masterNames, masterSales, masterCommissions);
+    }
+    
+    public void displayWorkingList() {
+        display(copyNames, copySales, copyCommissions);
     }
 
-    private void display(SalesPerson[] list) {
-        if (!isListEmpty(list)) {
+    private void display(String[] names, int[] sales, double[] commissions) {
+        if (!isListEmpty(names)) {
             System.out.println("\n\tSales and commission");
             System.out.println("\t===========================================");
             System.out.printf("\t%-20s %-11s %-11s %n", "Sales person", "Amount", "Commission");
             System.out.println("\t-------------------------------------------");
-            for (int i = 0; i < list.length; ++i) {
-                SalesPerson person = list[i];
+            for (int i = 0; i < names.length; ++i) {
 
                 System.out.printf("\t%-20s $%-10d $%-10.1f %n",
-                                    person.getName(),
-                                    person.getSales(),
-                                    person.getCommission());
+                                    names[i],
+                                    sales[i],
+                                    commissions[i]);
            }
            System.out.println("\t-------------------------------------------");
-           System.out.printf("\tTotal entries: %d %n", list.length);
+           System.out.printf("\tTotal entries: %d %n", names.length);
            System.out.println("\t-------------------------------------------\n");
         } else {
             System.out.println("\n\tNothing to display\n");
@@ -284,9 +324,9 @@ public class SalesDataManager {
         /**
         *   Name should meet the following requirements
         *   
-        *       i   Should contain First name and Last name
-        *       ii  First name and Last name should be separated by a space 
-        *       iii First name and Last name can only have alphabetic characters
+        *       i)      Should contain First name and Last name
+        *       ii)     First name and Last name should be separated by a space
+        *       iii)    First name and Last name can only have alphabetic characters
         */
         return Pattern.matches("[a-zA-Z]+[ ][a-zA-Z]+", name);
     }
@@ -301,21 +341,23 @@ public class SalesDataManager {
         /**
         *   Find the level of salesAmount on a SLAB of 25000
         *   
-        *       0 - 25000       0
-        *       25001 - 50000   1
-        *       50001 - 75000   2
-        *       75001 - 100000  3
+        *       Sales Amount        Level
+        *       ------------        -----
+        *       0 - 25000           0
+        *       25001 - 50000       1
+        *       50001 - 75000       2
+        *       75001 - 100000      3
         *   
         *   this can be achieved by simply dividing the salesAmount by SLAB
         *
-        *   With the calculated level, the percentile can be fetched from PERCENT array
+        *   With the calculated Level, the percentile can be fetched from PERCENT array
         */
         int level = (salesAmount - 1) / SLAB;
 
         return salesAmount * (PERCENT[level] / 100);
     }
 
-    private static boolean isListEmpty(SalesPerson[] list) {
+    private static boolean isListEmpty(String[] list) {
         if (list != null)
             if (list[0] != null)
                 return false;
@@ -346,15 +388,15 @@ public class SalesDataManager {
                 manager.inputData();
                 break;
             case 2:
-                manager.display();
+                manager.displayMasterList();
                 break;
             case 3:
                 manager.sortByName();
-                manager.display(manager.sortedList);
+                manager.displayWorkingList();
                 break;
             case 4:
                 manager.sortBySales();
-                manager.display(manager.sortedList);
+                manager.displayWorkingList();
                 break;
             case 5:
                 String name = null;
@@ -395,35 +437,5 @@ public class SalesDataManager {
                 System.out.println("\n\tInvalid option\n");
             }
         } while (true);
-    }
-}
-
-/**
-*   Class that models a Sales person
-*/
-class SalesPerson {
-
-    private static final int SALES_UNIT = 1000;
-    
-    private String  name;
-    private int     sales;
-    private double  commission;
-    
-    public SalesPerson(String name, int sales, double commission) {
-        this.name = name;
-        this.sales = sales * SALES_UNIT;
-        this.commission = commission;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public int getSales() {
-        return sales;
-    }
-
-    public double getCommission() {
-        return commission;
     }
 }
