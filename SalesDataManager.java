@@ -183,7 +183,7 @@ public class SalesDataManager {
                 copySales[i]        = inHandSale;
                 copyCommissions[i]  = inHandCommission;
             }
-            // Insertion sort begins
+            // Insertion sort ends
         }
     }
 
@@ -208,7 +208,7 @@ public class SalesDataManager {
                 }
             }
             // If a match was found, the control would have returned to caller
-            // If the control reaches here, the no match found
+            // If the control reaches here, then no match found
             System.out.println("\n\tNo match found\n");
         } else {
             System.out.println("\n\tNothing to search\n");
@@ -217,6 +217,7 @@ public class SalesDataManager {
 
     public void searchBySales(int sales) {
         if (!isListEmpty(masterNames)) {
+            // flag to see if atleast one record was found
             boolean foundRecords = false;
             sortBySales();
             /**
@@ -312,13 +313,13 @@ public class SalesDataManager {
 
     public boolean isValidName(String name) {
         /*
-        boolean isAlpha = true;
+        boolean isAllowed = true;
 
         for (char c : name.toCharArray())
             if (!Character.isLetter(c) && !Character.isWhiteSpace(c))
-                isAlpha = false;
+                isAllowed = false;
 
-        return isAlpha && name.indexOf(' ') == name.lastIndexOf(' ');
+        return isAllowed && name.indexOf(' ') >= 0 && name.indexOf(' ') == name.lastIndexOf(' ');
         */
         
         /**
